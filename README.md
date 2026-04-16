@@ -19,3 +19,13 @@ npx serve -l 8765
 ```
 
 Stop the server with **Ctrl+C** when you are done.
+
+## Production (Vercel)
+
+Deployed at **https://raptor-safari.vercel.app/** (connected to this GitHub repo for automatic deployments).
+
+From this directory, deploy a new production build:
+
+```bash
+vercel --prod
+```
