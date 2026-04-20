@@ -4,7 +4,7 @@
   "scripts": {
     "decompress": "brotli -d Build/rs.wasm.unityweb -o Build/rs.wasm",
     "wasm2wat": "wasm2wat Build/rs.wasm -o Build/rs.wat",
-    "wat2wasm": "wat2wasm Build/rs.wasm -o Build/rs.custom.wasm.unityweb",
+    "wat2wasm": "wat2wasm Build/rs.wat -o Build/rs.custom.wasm.unityweb",
     "custom": "npm run decompress && npm run wasm2wat && npm run wat2wasm"
   }
 }
