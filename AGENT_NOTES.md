@@ -78,11 +78,38 @@ Current safest packaging choice:
 
 ## Current Repo Context
 
-- `package.json` only includes helper scripts for the wasm path:
+- `package.json` now includes helper scripts for both the wasm path and the Unity data container:
+  - `serve`
   - `decompress`
   - `wasm2wat`
   - `wat2wasm`
-- Those scripts are still useful for code edits, but not for simple data-driven gameplay tuning like the timer change above.
+  - `data:manifest`
+  - `data:get-timer`
+  - `data:set-timer`
+- `scripts/unity_data_tool.py` is the current helper for inspecting and patching `Build/rs.data.unityweb`.
+- Example usage:
+  - `npm run data:get-timer`
+  - `npm run data:set-timer -- 1200`
+- The wasm scripts are still useful for code edits, but not for simple data-driven gameplay tuning like the timer change above.
+
+## Required Tooling
+
+- For the wasm workflow:
+  - `brotli`
+  - `wasm2wat`
+  - `wat2wasm`
+- For the Unity data workflow:
+  - `python3`
+  - `UnityPy`
+
+Install notes:
+
+- `UnityPy` can be installed globally with:
+  - `python3 -m pip install UnityPy`
+- Or into an isolated temp directory with:
+  - `python3 -m pip install --target /tmp/unitypy UnityPy`
+  - `PYTHONPATH=/tmp/unitypy python3 scripts/unity_data_tool.py get-timer`
+- `scripts/unity_data_tool.py` will print an install hint if `UnityPy` is missing.
 
 ## Leaderboard Notes
 

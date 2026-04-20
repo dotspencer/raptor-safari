@@ -2,9 +2,13 @@
   "name": "raptor-safari",
   "version": "1.0.0",
   "scripts": {
+    "serve": "python3 -m http.server 8765 --bind 127.0.0.1",
     "decompress": "brotli -d Build/rs.wasm.unityweb -o Build/rs.wasm",
     "wasm2wat": "wasm2wat Build/rs.wasm -o Build/rs.wat",
     "wat2wasm": "wat2wasm Build/rs.wat -o Build/rs.custom.wasm.unityweb",
-    "custom": "npm run decompress && npm run wasm2wat && npm run wat2wasm"
+    "custom": "npm run decompress && npm run wasm2wat && npm run wat2wasm",
+    "data:manifest": "python3 scripts/unity_data_tool.py manifest",
+    "data:get-timer": "python3 scripts/unity_data_tool.py get-timer",
+    "data:set-timer": "python3 scripts/unity_data_tool.py set-timer"
   }
 }
