@@ -83,3 +83,62 @@ Current safest packaging choice:
   - `wasm2wat`
   - `wat2wasm`
 - Those scripts are still useful for code edits, but not for simple data-driven gameplay tuning like the timer change above.
+
+## Leaderboard Notes
+
+- The leaderboard/networking code appears to live in the Blurst library classes referenced by metadata:
+  - `Blurst`
+  - `BlurstForm`
+  - `BlurstGameSummary`
+  - `SubmitLeaderboard`
+  - `GetLeaderboard`
+- Relevant source path strings in metadata:
+  - `Assets/_Scripts/Library/Blurst/Blurst.cs`
+  - `Assets/_Scripts/Library/Blurst/BlurstForm.cs`
+  - `Assets/_Scripts/Library/Blurst/BlurstGameSummary.cs`
+
+Likely leaderboard submit endpoint:
+
+- `https://rip.blurst.com/log/play`
+
+Why this is the current best guess:
+
+- `Build/global-metadata.dat` contains:
+  - base host `https://rip.blurst.com/`
+  - path fragment `log/play`
+  - leaderboard-related names including `SubmitLeaderboard`, `GetLeaderboard`, `leaderboardID`, `rankToday`, and `rankAllTime`
+- The same metadata also contains account-related paths:
+  - `log/account/create/guest`
+  - `log/account/create/named`
+
+Likely request format:
+
+- `multipart/form-data`
+- This is inferred from the Blurst form abstraction and the presence of:
+  - `BlurstForm`
+  - `AddField`
+  - `AddObject`
+  - `AddBinaryData`
+  - `UnityWebRequest`
+  - `multipart/form-data; boundary=`
+
+Likely relevant submit fields:
+
+- `gameid`
+- `gameversion`
+- `gamelogid`
+- `guesthash`
+- `scopeid`
+- `scorelog`
+
+Likely values/constants tied to the leaderboard request:
+
+- `gameid=raptor`
+- `scopeid=raptor_new_leaderboard`
+
+Important confidence note:
+
+- The endpoint and field names above are supported by local metadata strings.
+- The exact `scorelog` serialization format was not fully recovered yet.
+- It is also not fully confirmed whether `player_game_log` is an internal action name, a field, or part of server-side routing.
+- If exact replay or spoofing matters, capture a real network request from the browser and compare it against these notes before assuming the payload is complete.
