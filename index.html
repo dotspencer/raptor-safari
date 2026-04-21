@@ -40,6 +40,38 @@
 <body>
 	<div id="gameContainer">
 		<canvas id="unity-canvas"></canvas>
+		<script>
+			(function installNetworkLogging() {
+				var originalFetch = window.fetch;
+				if (originalFetch) {
+					window.fetch = function (input, init) {
+						var url = typeof input === "string" ? input : (input && input.url) || String(input);
+						console.log("[net] fetch", (init && init.method) || "GET", url, init || {});
+						return originalFetch.apply(this, arguments).then(function (response) {
+							console.log("[net] fetch:response", response.status, response.url);
+							return response;
+						});
+					};
+				}
+
+				var originalOpen = XMLHttpRequest.prototype.open;
+				var originalSend = XMLHttpRequest.prototype.send;
+				XMLHttpRequest.prototype.open = function (method, url) {
+					this.__debugMethod = method;
+					this.__debugUrl = url;
+					console.log("[net] xhr:open", method, url);
+					return originalOpen.apply(this, arguments);
+				};
+				XMLHttpRequest.prototype.send = function (body) {
+					var xhr = this;
+					console.log("[net] xhr:send", xhr.__debugMethod, xhr.__debugUrl, body);
+					xhr.addEventListener("loadend", function () {
+						console.log("[net] xhr:response", xhr.status, xhr.__debugMethod, xhr.__debugUrl);
+					}, { once: true });
+					return originalSend.apply(this, arguments);
+				};
+			})();
+		</script>
 		<script src="Build/rs.loader.js"></script>
 		<script>
 			createUnityInstance(document.querySelector("#unity-canvas"), {

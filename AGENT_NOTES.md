@@ -110,6 +110,16 @@ Install notes:
   - `python3 -m pip install --target /tmp/unitypy UnityPy`
   - `PYTHONPATH=/tmp/unitypy python3 scripts/unity_data_tool.py get-timer`
 - `scripts/unity_data_tool.py` will print an install hint if `UnityPy` is missing.
+- On macOS/Homebrew Python, global `pip install` may fail with `externally-managed-environment`.
+- In that case, use a repo-local virtualenv:
+  - `python3 -m venv .venv`
+  - `source .venv/bin/activate`
+  - `python3 -m pip install UnityPy`
+- `package.json` now prefers `.venv/bin/python` automatically for the `data:*` scripts when that virtualenv exists.
+- For the local backend logging proxy:
+  - `node`
+  - `npm`
+  - `express` via `npm install`
 
 ## Leaderboard Notes
 
@@ -214,3 +224,53 @@ Leaderboard-specific failures likely surface separately through:
 - `SubmitLeaderboard`
 - `GetLeaderboard`
 - `connectionError`
+
+## Local Backend Proxy
+
+- A local logging proxy now lives at:
+- A local logging proxy now lives at:
+  - `scripts/local_backend_proxy.js`
+- Default local proxy address:
+  - `http://127.0.0.1:18788/`
+
+Useful npm commands:
+
+- `npm run proxy`
+- `npm run data:get-host`
+- `npm run data:set-host:local`
+- `npm run data:set-host:remote`
+
+Current host patching approach:
+
+- The backend host string is patched directly in `Build/rs.data.unityweb`.
+- Original host string:
+  - `https://rip.blurst.com/`
+- Local proxy host string:
+  - `http://127.0.0.1:18788/`
+- The replacement keeps the same string length, which makes patching simple and stable.
+
+Typical local logging workflow:
+
+1. Run `npm install` if dependencies are not installed yet.
+2. Run `npm run data:set-host:local`.
+3. Run `npm run proxy`.
+4. In another shell, run `npm run serve`.
+5. Open `http://127.0.0.1:8765/`.
+6. Watch the proxy console for request method, path, headers, and body preview/form fields.
+7. When done, run `npm run data:set-host:remote` to point the build back at the real backend.
+
+Proxy behavior:
+
+- Logs every request path and headers.
+- Parses and prints `application/x-www-form-urlencoded` bodies.
+- Prints JSON bodies when applicable.
+- Prints a raw body preview for other content types.
+- Does not forward requests to the real backend.
+- Returns a simple local JSON success response so calls can be inspected without touching production.
+- Adds permissive CORS headers for local testing.
+
+Browser-side debugging:
+
+- `index.html` currently wraps `window.fetch` and `XMLHttpRequest` to log attempted network calls in the browser console.
+- This was added because the game showed offline behavior without any requests reaching the local Express logger.
+- If the console shows no backend requests, the likely issue is game logic choosing a non-web/offline path before request creation.

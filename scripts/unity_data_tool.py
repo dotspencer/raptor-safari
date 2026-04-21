@@ -18,6 +18,8 @@ from pathlib import Path
 DEFAULT_DATA_PATH = Path("Build/rs.data.unityweb")
 DEFAULT_GAMELEVEL_PATH_ID = 4627
 DEFAULT_GAMELEVEL_FLOAT_OFFSET = 32
+DEFAULT_REMOTE_HOST = "https://rip.blurst.com/"
+DEFAULT_LOCAL_HOST = "http://127.0.0.1:18788/"
 
 
 def require_unitypy():
@@ -147,6 +149,37 @@ def set_game_length(data_path: Path, seconds: float, path_id: int, float_offset:
     return before, after
 
 
+def get_host(data_path: Path, remote_host: str, local_host: str) -> str:
+    raw = data_path.read_bytes()
+    for host in (remote_host, local_host):
+        needle = host.encode("utf-8")
+        if needle in raw:
+            return host
+    raise ValueError("known backend host string not found in rs.data.unityweb")
+
+
+def replace_host(data_path: Path, from_host: str, to_host: str) -> tuple[str, str]:
+    if len(from_host) != len(to_host):
+        raise ValueError("host replacement must keep the same string length")
+
+    raw = data_path.read_bytes()
+    from_bytes = from_host.encode("utf-8")
+    to_bytes = to_host.encode("utf-8")
+    count = raw.count(from_bytes)
+    if count == 0:
+        target_count = raw.count(to_bytes)
+        if target_count == 1:
+            return to_host, to_host
+        raise ValueError(
+            f"expected exactly one occurrence of {from_host!r}, found {count}; "
+            f"also found {target_count} occurrences of {to_host!r}"
+        )
+    if count != 1:
+        raise ValueError(f"expected exactly one occurrence of {from_host!r}, found {count}")
+    data_path.write_bytes(raw.replace(from_bytes, to_bytes, 1))
+    return from_host, to_host
+
+
 def cmd_manifest(args: argparse.Namespace) -> int:
     raw = args.data.read_bytes()
     header_size, entries = parse_container(raw)
@@ -165,6 +198,17 @@ def cmd_get_timer(args: argparse.Namespace) -> int:
 def cmd_set_timer(args: argparse.Namespace) -> int:
     before, after = set_game_length(args.data, args.seconds, args.path_id, args.float_offset)
     print(f"timer: {before} -> {after}")
+    return 0
+
+
+def cmd_get_host(args: argparse.Namespace) -> int:
+    print(get_host(args.data, args.remote_host, args.local_host))
+    return 0
+
+
+def cmd_set_host(args: argparse.Namespace) -> int:
+    from_host, to_host = replace_host(args.data, args.from_host, args.to_host)
+    print(f"host: {from_host} -> {to_host}")
     return 0
 
 
@@ -187,6 +231,16 @@ def build_parser() -> argparse.ArgumentParser:
     set_timer.add_argument("--path-id", type=int, default=DEFAULT_GAMELEVEL_PATH_ID)
     set_timer.add_argument("--float-offset", type=int, default=DEFAULT_GAMELEVEL_FLOAT_OFFSET)
     set_timer.set_defaults(func=cmd_set_timer)
+
+    get_host = subparsers.add_parser("get-host", help="Read the current backend host string")
+    get_host.add_argument("--remote-host", default=DEFAULT_REMOTE_HOST)
+    get_host.add_argument("--local-host", default=DEFAULT_LOCAL_HOST)
+    get_host.set_defaults(func=cmd_get_host)
+
+    set_host = subparsers.add_parser("set-host", help="Replace the backend host string")
+    set_host.add_argument("from_host")
+    set_host.add_argument("to_host")
+    set_host.set_defaults(func=cmd_set_host)
 
     return parser
 

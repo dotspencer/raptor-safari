@@ -1,14 +1,23 @@
 {
   "name": "raptor-safari",
   "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.21.2"
+  },
   "scripts": {
+    "py": "sh -c 'if [ -x .venv/bin/python ]; then exec .venv/bin/python \"$@\"; else exec python3 \"$@\"; fi' --",
     "serve": "python3 -m http.server 8765 --bind 127.0.0.1",
+    "proxy": "node scripts/local_backend_proxy.js",
     "decompress": "brotli -d Build/rs.wasm.unityweb -o Build/rs.wasm",
     "wasm2wat": "wasm2wat Build/rs.wasm -o Build/rs.wat",
     "wat2wasm": "wat2wasm Build/rs.wat -o Build/rs.custom.wasm.unityweb",
     "custom": "npm run decompress && npm run wasm2wat && npm run wat2wasm",
-    "data:manifest": "python3 scripts/unity_data_tool.py manifest",
-    "data:get-timer": "python3 scripts/unity_data_tool.py get-timer",
-    "data:set-timer": "python3 scripts/unity_data_tool.py set-timer"
+    "data:manifest": "npm run py -- scripts/unity_data_tool.py manifest",
+    "data:get-host": "npm run py -- scripts/unity_data_tool.py get-host",
+    "data:set-host": "npm run py -- scripts/unity_data_tool.py set-host",
+    "data:set-host:local": "npm run py -- scripts/unity_data_tool.py set-host https://rip.blurst.com/ http://127.0.0.1:18788/",
+    "data:set-host:remote": "npm run py -- scripts/unity_data_tool.py set-host http://127.0.0.1:18788/ https://rip.blurst.com/",
+    "data:get-timer": "npm run py -- scripts/unity_data_tool.py get-timer",
+    "data:set-timer": "npm run py -- scripts/unity_data_tool.py set-timer"
   }
 }
