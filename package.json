@@ -17,6 +17,12 @@
     "data:set-host": "npm run py -- scripts/unity_data_tool.py set-host",
     "data:set-host:local": "npm run py -- scripts/unity_data_tool.py set-host https://rip.blurst.com/ http://127.0.0.1:18788/",
     "data:set-host:remote": "npm run py -- scripts/unity_data_tool.py set-host http://127.0.0.1:18788/ https://rip.blurst.com/",
+    "data:get-boost": "npm run py -- scripts/unity_data_tool.py get-boost",
+    "data:set-boost": "npm run py -- scripts/unity_data_tool.py set-boost",
+    "data:get-boost-reload": "npm run py -- scripts/unity_data_tool.py get-boost-reload",
+    "data:set-boost-reload": "npm run py -- scripts/unity_data_tool.py set-boost-reload",
+    "data:get-max-speed": "npm run py -- scripts/unity_data_tool.py get-max-speed",
+    "data:set-max-speed": "npm run py -- scripts/unity_data_tool.py set-max-speed",
     "data:get-timer": "npm run py -- scripts/unity_data_tool.py get-timer",
     "data:set-timer": "npm run py -- scripts/unity_data_tool.py set-timer"
   }

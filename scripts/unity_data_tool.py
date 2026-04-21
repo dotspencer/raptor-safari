@@ -18,6 +18,11 @@ from pathlib import Path
 DEFAULT_DATA_PATH = Path("Build/rs.data.unityweb")
 DEFAULT_GAMELEVEL_PATH_ID = 4627
 DEFAULT_GAMELEVEL_FLOAT_OFFSET = 32
+DEFAULT_POWERUP_BOOST_SCRIPT_ID = 1058
+DEFAULT_POWERUP_BOOST_STRENGTH_OFFSET = 72
+DEFAULT_POWERUP_BOOST_RELOAD_OFFSET = 84
+DEFAULT_YCAR_SCRIPT_ID = 985
+DEFAULT_YCAR_MAX_MOTOR_SPEED_OFFSET = 120
 DEFAULT_REMOTE_HOST = "https://rip.blurst.com/"
 DEFAULT_LOCAL_HOST = "http://127.0.0.1:18788/"
 
@@ -149,6 +154,115 @@ def set_game_length(data_path: Path, seconds: float, path_id: int, float_offset:
     return before, after
 
 
+def get_powerup_boost_values(data_path: Path, script_id: int, float_offset: int) -> list[tuple[str, int, float]]:
+    _, _, _, _, env = load_env(data_path)
+    values: list[tuple[str, int, float]] = []
+    for obj in env.objects:
+        if obj.type.name != "MonoBehaviour":
+            continue
+        try:
+            tt = obj.read_typetree(check_read=False)
+        except Exception:
+            continue
+        if tt.get("m_Script", {}).get("m_PathID") != script_id:
+            continue
+        raw = obj.get_raw_data()
+        value = struct.unpack_from("<f", raw, float_offset)[0]
+        values.append((obj.assets_file.name, obj.path_id, value))
+    return values
+
+
+def set_powerup_boost_values(
+    data_path: Path,
+    value: float,
+    script_id: int,
+    float_offset: int,
+) -> list[tuple[str, int, float, float]]:
+    raw, header_size, entries, _, env = load_env(data_path)
+    patched: list[tuple[str, int, float, float]] = []
+
+    for obj in env.objects:
+        if obj.type.name != "MonoBehaviour":
+            continue
+        try:
+            tt = obj.read_typetree(check_read=False)
+        except Exception:
+            continue
+        if tt.get("m_Script", {}).get("m_PathID") != script_id:
+            continue
+        obj_raw = bytearray(obj.get_raw_data())
+        before = struct.unpack_from("<f", obj_raw, float_offset)[0]
+        struct.pack_into("<f", obj_raw, float_offset, value)
+        obj.set_raw_data(bytes(obj_raw))
+        patched.append((obj.assets_file.name, obj.path_id, before, value))
+
+    new_payload = env.file.save("original")
+    rebuilt = rebuild_container(raw, header_size, entries, new_payload)
+    data_path.write_bytes(rebuilt)
+    return patched
+
+
+def get_powerup_boost_reload_values(data_path: Path, script_id: int, float_offset: int) -> list[tuple[str, int, float]]:
+    return get_powerup_boost_values(data_path, script_id, float_offset)
+
+
+def set_powerup_boost_reload_values(
+    data_path: Path,
+    value: float,
+    script_id: int,
+    float_offset: int,
+) -> list[tuple[str, int, float, float]]:
+    return set_powerup_boost_values(data_path, value, script_id, float_offset)
+
+
+def get_script_float_values(data_path: Path, script_id: int, float_offset: int) -> list[tuple[str, int, float]]:
+    _, _, _, _, env = load_env(data_path)
+    values: list[tuple[str, int, float]] = []
+    for obj in env.objects:
+        if obj.type.name != "MonoBehaviour":
+            continue
+        try:
+            tt = obj.read_typetree(check_read=False)
+        except Exception:
+            continue
+        if tt.get("m_Script", {}).get("m_PathID") != script_id:
+            continue
+        raw = obj.get_raw_data()
+        value = struct.unpack_from("<f", raw, float_offset)[0]
+        values.append((obj.assets_file.name, obj.path_id, value))
+    return values
+
+
+def set_script_float_values(
+    data_path: Path,
+    value: float,
+    script_id: int,
+    float_offset: int,
+) -> list[tuple[str, int, float, float]]:
+    raw, header_size, entries, _, env = load_env(data_path)
+    patched: list[tuple[str, int, float, float]] = []
+
+    for obj in env.objects:
+        if obj.type.name != "MonoBehaviour":
+            continue
+        try:
+            tt = obj.read_typetree(check_read=False)
+        except Exception:
+            continue
+        if tt.get("m_Script", {}).get("m_PathID") != script_id:
+            continue
+        obj_raw = bytearray(obj.get_raw_data())
+        before = struct.unpack_from("<f", obj_raw, float_offset)[0]
+        struct.pack_into("<f", obj_raw, float_offset, value)
+        obj.set_raw_data(bytes(obj_raw))
+        patched.append((obj.assets_file.name, obj.path_id, before, value))
+
+    new_payload = env.file.save("original")
+    rebuilt = rebuild_container(raw, header_size, entries, new_payload)
+    data_path.write_bytes(rebuilt)
+    return patched
+
+
 def get_host(data_path: Path, remote_host: str, local_host: str) -> str:
     raw = data_path.read_bytes()
     for host in (remote_host, local_host):
@@ -212,6 +326,57 @@ def cmd_set_host(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_get_boost(args: argparse.Namespace) -> int:
+    for asset_name, path_id, value in get_powerup_boost_values(args.data, args.script_id, args.float_offset):
+        print(f"{asset_name}:{path_id} {value}")
+    return 0
+
+
+def cmd_set_boost(args: argparse.Namespace) -> int:
+    for asset_name, path_id, before, after in set_powerup_boost_values(
+        args.data,
+        args.value,
+        args.script_id,
+        args.float_offset,
+    ):
+        print(f"{asset_name}:{path_id} {before} -> {after}")
+    return 0
+
+
+def cmd_get_boost_reload(args: argparse.Namespace) -> int:
+    for asset_name, path_id, value in get_powerup_boost_reload_values(args.data, args.script_id, args.float_offset):
+        print(f"{asset_name}:{path_id} {value}")
+    return 0
+
+
+def cmd_set_boost_reload(args: argparse.Namespace) -> int:
+    for asset_name, path_id, before, after in set_powerup_boost_reload_values(
+        args.data,
+        args.value,
+        args.script_id,
+        args.float_offset,
+    ):
+        print(f"{asset_name}:{path_id} {before} -> {after}")
+    return 0
+
+
+def cmd_get_max_speed(args: argparse.Namespace) -> int:
+    for asset_name, path_id, value in get_script_float_values(args.data, args.script_id, args.float_offset):
+        print(f"{asset_name}:{path_id} {value}")
+    return 0
+
+
+def cmd_set_max_speed(args: argparse.Namespace) -> int:
+    for asset_name, path_id, before, after in set_script_float_values(
+        args.data,
+        args.value,
+        args.script_id,
+        args.float_offset,
+    ):
+        print(f"{asset_name}:{path_id} {before} -> {after}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA_PATH, help="Path to rs.data.unityweb")
@@ -241,6 +406,39 @@ def build_parser() -> argparse.ArgumentParser:
     set_host.add_argument("from_host")
     set_host.add_argument("to_host")
     set_host.set_defaults(func=cmd_set_host)
+
+    get_boost = subparsers.add_parser("get-boost", help="Read serialized PowerupBoost strength values")
+    get_boost.add_argument("--script-id", type=int, default=DEFAULT_POWERUP_BOOST_SCRIPT_ID)
+    get_boost.add_argument("--float-offset", type=int, default=DEFAULT_POWERUP_BOOST_STRENGTH_OFFSET)
+    get_boost.set_defaults(func=cmd_get_boost)
+
+    set_boost = subparsers.add_parser("set-boost", help="Patch serialized PowerupBoost strength values")
+    set_boost.add_argument("value", type=float, help="New boost strength")
+    set_boost.add_argument("--script-id", type=int, default=DEFAULT_POWERUP_BOOST_SCRIPT_ID)
+    set_boost.add_argument("--float-offset", type=int, default=DEFAULT_POWERUP_BOOST_STRENGTH_OFFSET)
+    set_boost.set_defaults(func=cmd_set_boost)
+
+    get_boost_reload = subparsers.add_parser("get-boost-reload", help="Read serialized PowerupBoost reload/cooldown values")
+    get_boost_reload.add_argument("--script-id", type=int, default=DEFAULT_POWERUP_BOOST_SCRIPT_ID)
+    get_boost_reload.add_argument("--float-offset", type=int, default=DEFAULT_POWERUP_BOOST_RELOAD_OFFSET)
+    get_boost_reload.set_defaults(func=cmd_get_boost_reload)
+
+    set_boost_reload = subparsers.add_parser("set-boost-reload", help="Patch serialized PowerupBoost reload/cooldown values")
+    set_boost_reload.add_argument("value", type=float, help="New boost reload/cooldown value")
+    set_boost_reload.add_argument("--script-id", type=int, default=DEFAULT_POWERUP_BOOST_SCRIPT_ID)
+    set_boost_reload.add_argument("--float-offset", type=int, default=DEFAULT_POWERUP_BOOST_RELOAD_OFFSET)
+    set_boost_reload.set_defaults(func=cmd_set_boost_reload)
+
+    get_max_speed = subparsers.add_parser("get-max-speed", help="Read serialized YCar max motor speed values")
+    get_max_speed.add_argument("--script-id", type=int, default=DEFAULT_YCAR_SCRIPT_ID)
+    get_max_speed.add_argument("--float-offset", type=int, default=DEFAULT_YCAR_MAX_MOTOR_SPEED_OFFSET)
+    get_max_speed.set_defaults(func=cmd_get_max_speed)
+
+    set_max_speed = subparsers.add_parser("set-max-speed", help="Patch serialized YCar max motor speed values")
+    set_max_speed.add_argument("value", type=float, help="New max motor speed")
+    set_max_speed.add_argument("--script-id", type=int, default=DEFAULT_YCAR_SCRIPT_ID)
+    set_max_speed.add_argument("--float-offset", type=int, default=DEFAULT_YCAR_MAX_MOTOR_SPEED_OFFSET)
+    set_max_speed.set_defaults(func=cmd_set_max_speed)
 
     return parser
 
