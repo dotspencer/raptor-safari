@@ -169,3 +169,48 @@ Important confidence note:
 - The exact `scorelog` serialization format was not fully recovered yet.
 - It is also not fully confirmed whether `player_game_log` is an internal action name, a field, or part of server-side routing.
 - If exact replay or spoofing matters, capture a real network request from the browser and compare it against these notes before assuming the payload is complete.
+
+## Backend Availability Checks
+
+- The most likely backend/online-state checks live in the Blurst login flow, not in `Build/rs.loader.js`.
+- Relevant metadata names:
+  - `BlurstLogin`
+  - `VersionCheck`
+  - `GetGuestProfile`
+  - `GetProfile`
+  - `SetOffline`
+  - `LoginStates`
+  - `Loading`
+- The lower-level request/form handling appears to use:
+  - `BlurstForm`
+  - `HandleWeb`
+  - `HandleStandalone`
+  - `dataOK`
+  - `NotOK`
+  - `DebugInfo`
+  - `www`
+
+Likely flow:
+
+1. The game/login UI performs `VersionCheck`.
+2. It requests profile data through `GetGuestProfile` or `GetProfile`.
+3. The request layer decides whether the response is valid via `dataOK` / `NotOK`.
+4. Failures can transition through `SetOffline`.
+5. In offline mode, online features are disabled.
+
+User-facing strings that support this:
+
+- `Please wait, talking to server...`
+- `Connection error.`
+- `Connection trouble.  Try again later?`
+- `Achievements and leaderboards will be disabled.`
+
+Other likely online-state clue:
+
+- `BlurstProfile` appears to have an `online` field/property in metadata.
+
+Leaderboard-specific failures likely surface separately through:
+
+- `SubmitLeaderboard`
+- `GetLeaderboard`
+- `connectionError`
